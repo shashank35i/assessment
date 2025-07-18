@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyOKR - Dashboard</title>
+  <link rel="icon" href="data:image/x-icon;base64,AA" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .sidebar {
+      transition: transform 0.3s ease;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .modal {
+      transition: opacity 0.3s ease;
+    }
+    .modal-open {
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-100 font-sans modal-open:bg-black/50">
+  <div class="loading fixed inset-0 bg-white/80 flex items-center justify-center z-50" id="loading">
+    <p class="text-lg text-indigo-600">Loading...</p>
+  </div>
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 bg-gray-800 text-white transform -translate-x-full md:translate-x-0 transition">
+      <div class="p-4 flex items-center space-x-2 border-b border-gray-700">
+        <span class="text-xl font-bold">MyOKR</span>
+        <i data-feather="target" class="w-6 h-6"></i>
+      </div>
+      <div class="p-4">
+        <input id="sidebarSearch" type="text" placeholder="Search OKRs..." class="w-full p-2 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+      </div>
+      <nav class="p-4 space-y-2">
+        <a href="#" class="nav-link flex items-center space-x-2 p-2 rounded-lg hover:bg-indigo-600 active:bg-indigo-600 transition" data-section="dashboardSection">
+          <i data-feather="home" class="w-5 h-5"></i>
+          <span>Dashboard</span>
+        </a>
+        <div id="adminNav" class="hidden space-y-2">
+          <a href="#" class="nav-link flex items-center space-x-2 p-2 rounded-lg hover:bg-indigo-600" data-submenu="adminSubmenu">
+            <i data-feather="settings" class="w-5 h-5"></i>
+            <span>Admin</span>
+          </a>
+          <div id="adminSubmenu" class="space-y-2 hidden">
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 pl-8 rounded-lg hover:bg-indigo-600" data-section="adminOrgSection">
+              <i data-feather="grid" class="w-5 h-5"></i>
+              <span>Organisation</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 pl-8 rounded-lg hover:bg-indigo-600" data-section="adminDeptSection">
+              <i data-feather="layers" class="w-5 h-5"></i>
+              <span>Department</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 pl-8 rounded-lg hover:bg-indigo-600" data-section="adminTeamSection">
+              <i data-feather="users" class="w-5 h-5"></i>
+              <span>Team</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+      <div class="absolute bottom-4 p-4 border-t border-gray-700 w-full">
+        <p id="userName" class="text-sm"></p>
+        <p id="userEmail" class="text-sm text-gray-400"></p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 ml-0 md:ml-64">
+      <header class="sticky top-0 bg-white shadow p-4 flex justify-between items-center z-10">
+        <div class="flex items-center space-x-4">
+          <button id="hamburger" class="md:hidden">
+            <i data-feather="menu" class="w-6 h-6"></i>
+          </button>
+          <input id="searchBar" type="text" placeholder="Search OKRs..." class="hidden md:block p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+        </div>
+        <div class="user-dropdown relative">
+          <button id="userDropdownToggle" class="flex items-center space-x-2">
+            <i data-feather="user" class="w-5 h-5"></i>
+            <span id="headerUserName"></span>
+          </button>
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 bg-white rounded-lg shadow-lg w-48">
+            <p id="dropdownUserEmail" class="px-4 py-2 text-sm text-gray-600"></p>
+            <button id="logoutButton" class="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100">Logout</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="p-4">
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800">Dashboard</h2>
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-4">Create OKR</h3>
+            <input id="objective" type="text" placeholder="Objective" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+            <input id="keyResults" type="text" placeholder="Key Results (comma separated)" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+            <select id="assignedTo" multiple class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+              <option value="">Select Team Members</option>
+            </select>
+            <button id="createOKRButton" class="w-full p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Create OKR</button>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-4">OKR Analytics</h3>
+            <div class="relative w-full max-w-md h-64 mx-auto">
+              <canvas id="okrChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-4">Goal Alignment</h3>
+            <ul id="alignmentTree" class="list-disc pl-6"></ul>
+          </div>
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Your OKRs</h3>
+            <button id="exportOKRsButton" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Export OKRs</button>
+          </div>
+          <div id="okrsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto"></div>
+        </div>
+
+        <!-- Admin Sections -->
+        <div id="adminOrgSection" class="hidden space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800">Manage Organisation</h2>
+          <div class="bg-white p-6 rounded-lg shadow">
+            <input id="orgName" type="text" placeholder="Organisation Name" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+            <button id="createOrgButton" class="w-full p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Create</button>
+          </div>
+        </div>
+        <div id="adminDeptSection" class="hidden space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800">Manage Department</h2>
+          <div class="bg-white p-6 rounded-lg shadow">
+            <select id="orgSelectForDept" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+              <option value="">Select Organisation</option>
+            </select>
+            <input id="deptName" type="text" placeholder="Department Name" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+            <button id="createDeptButton" class="w-full p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Create</button>
+          </div>
+        </div>
+        <div id="adminTeamSection" class="hidden space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800">Manage Team</h2>
+          <div class="bg-white p-6 rounded-lg shadow">
+            <select id="orgSelectForTeam" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+              <option value="">Select Organisation</option>
+            </select>
+            <select id="deptSelectForTeam" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" disabled>
+              <option value="">Select Department</option>
+            </select>
+            <input id="teamName" type="text" placeholder="Team Name" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+            <button id="createTeamButton" class="w-full p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for OKR Editing -->
+    <div id="editOKRModal" class="modal fixed inset-0 bg-black/50 flex items-center justify-center hidden">
+      <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4">Edit OKR</h3>
+        <input id="editObjective" type="text" placeholder="Objective" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+        <input id="editKeyResults" type="text" placeholder="Key Results (comma separated)" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+        <select id="editAssignedTo" multiple class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-600"></select>
+        <div class="flex justify-end space-x-2">
+          <button id="cancelEditButton" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+          <button id="saveEditButton" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAnHzdsQH2EPYK1hUqWr67x_CSfL3vrsos",
+      authDomain: "assessment-43684.firebaseapp.com",
+      projectId: "assessment-43684",
+      storageBucket: "assessment-43684.appspot.com",
+      messagingSenderId: "210801400468",
+      appId: "1:210801400468:web:eeb913406f4b6935b6b281",
+      measurementId: "G-1VDL78V1QX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    // DOM Elements
+    const loading = document.getElementById('loading');
+    const sidebar = document.getElementById('sidebar');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const adminOrgSection = document.getElementById('adminOrgSection');
+    const adminDeptSection = document.getElementById('adminDeptSection');
+    const adminTeamSection = document.getElementById('adminTeamSection');
+    const adminNav = document.getElementById('adminNav');
+    const orgSelectForDept = document.getElementById('orgSelectForDept');
+    const deptSelectForTeam = document.getElementById('deptSelectForTeam');
+    const orgSelectForTeam = document.getElementById('orgSelectForTeam');
+    const orgNameInput = document.getElementById('orgName');
+    const deptNameInput = document.getElementById('deptName');
+    const teamNameInput = document.getElementById('teamName');
+    const objectiveInput = document.getElementById('objective');
+    const keyResultsInput = document.getElementById('keyResults');
+    const assignedToSelect = document.getElementById('assignedTo');
+    const okrsList = document.getElementById('okrsList');
+    const alignmentTree = document.getElementById('alignmentTree');
+    const searchBar = document.getElementById('searchBar');
+    const sidebarSearch = document.getElementById('sidebarSearch');
+    const userName = document.getElementById('userName');
+    const userEmail = document.getElementById('userEmail');
+    const headerUserName = document.getElementById('headerUserName');
+    const dropdownUserEmail = document.getElementById('dropdownUserEmail');
+    const editOKRModal = document.getElementById('editOKRModal');
+    const editObjective = document.getElementById('editObjective');
+    const editKeyResults = document.getElementById('editKeyResults');
+    const editAssignedTo = document.getElementById('editAssignedTo');
+    let userData = null;
+    let chartInstance = null;
+    let allOKRs = [];
+
+    // Toast Notification
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium z-50 max-w-[90%]`;
+      toast.classList.add(type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500');
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Retry Logic
+    async function withRetry(fn, maxAttempts = 3, delay = 1000) {
+      if (!navigator.onLine) {
+        showToast('You’re offline. Please check your connection.', 'error');
+        throw new Error('Network unavailable');
+      }
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          return await fn();
+        } catch (err) {
+          console.error(`Attempt ${attempt} failed: ${err.message}`);
+          if (err.code === 'permission-denied') {
+            showToast('Permission denied: Check Firestore rules.', 'error');
+            throw err;
+          }
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          throw err;
+        }
+      }
+    }
+
+    // Navigation
+    function toggleSidebar() {
+      sidebar.classList.toggle('active');
+    }
+
+    function toggleSubmenu(id) {
+      document.getElementById(id).classList.toggle('hidden');
+    }
+
+    function toggleDropdown() {
+      document.getElementById('userDropdown').classList.toggle('hidden');
+    }
+
+    function showSection(sectionId) {
+      dashboardSection.classList.add('hidden');
+      adminOrgSection.classList.add('hidden');
+      adminDeptSection.classList.add('hidden');
+      adminTeamSection.classList.add('hidden');
+      document.getElementById(sectionId).classList.remove('hidden');
+      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+      document.querySelector(`[data-section="${sectionId}"]`)?.classList.add('active');
+      if (window.innerWidth <= 768) sidebar.classList.remove('active');
+    }
+
+    // Authentication
+    function logout() {
+      auth.signOut().then(() => {
+        showToast('Logged out successfully!', 'success');
+        window.location.href = 'index.html';
+      }).catch(err => {
+        showToast('Logout failed: ' + err.message, 'error');
+      });
+    }
+
+    // Hierarchy Management
+    async function loadAdminPanel() {
+      if (userData?.role === 'admin') {
+        try {
+          const snapshot = await withRetry(() => db.collection('organisations').get());
+          orgSelectForDept.innerHTML = orgSelectForTeam.innerHTML = '<option value="">Select Organisation</option>';
+          snapshot.forEach(doc => {
+            const option = `<option value="${doc.id}">${doc.data().name}</option>`;
+            orgSelectForDept.innerHTML += option;
+            orgSelectForTeam.innerHTML += option;
+          });
+        } catch (err) {
+          showToast('Error loading organizations: ' + err.message, 'error');
+        }
+      }
+    }
+
+    async function createOrganisation() {
+      const name = orgNameInput.value.trim();
+      if (!name) {
+        showToast('Please enter an organisation name', 'error');
+        return;
+      }
+      try {
+        await withRetry(() => db.collection('organisations').add({ name }));
+        showToast('Organisation created successfully!', 'success');
+        orgNameInput.value = '';
+        loadAdminPanel();
+      } catch (err) {
+        showToast('Error creating organisation: ' + err.message, 'error');
+      }
+    }
+
+    async function createDepartment() {
+      const orgId = orgSelectForDept.value;
+      const name = deptNameInput.value.trim();
+      if (!orgId || !name) {
+        showToast('Please select an organisation and enter a department name', 'error');
+        return;
+      }
+      try {
+        await withRetry(() => db.collection(`organisations/${orgId}/departments`).add({ name }));
+        showToast('Department created successfully!', 'success');
+        deptNameInput.value = '';
+      } catch (err) {
+        showToast('Error creating department: ' + err.message, 'error');
+      }
+    }
+
+    async function createTeam() {
+      const orgId = orgSelectForTeam.value;
+      const deptId = deptSelectForTeam.value;
+      const name = teamNameInput.value.trim();
+      if (!orgId || !deptId || !name) {
+        showToast('Please select an organisation, department, and enter a team name', 'error');
+        return;
+      }
+      try {
+        await withRetry(() => db.collection(`organisations/${orgId}/departments/${deptId}/teams`).add({ name, members: [] }));
+        showToast('Team created successfully!', 'success');
+        teamNameInput.value = '';
+      } catch (err) {
+        showToast('Error creating team: ' + err.message, 'error');
+      }
+    }
+
+    // OKR Management
+    async function loadTeamMembers() {
+      if (!userData) {
+        showToast('User data not available.', 'error');
+        return;
+      }
+      try {
+        const doc = await withRetry(() => db.doc(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}`).get());
+        if (!doc.exists) {
+          showToast('Team not found.', 'error');
+          assignedToSelect.innerHTML = editAssignedTo.innerHTML = '<option value="">No team members available</option>';
+          return;
+        }
+        const members = doc.data().members || [];
+        assignedToSelect.innerHTML = editAssignedTo.innerHTML = '';
+        if (members.length === 0) {
+          assignedToSelect.innerHTML = editAssignedTo.innerHTML = '<option value="">No team members available</option>';
+        } else {
+          members.forEach(member => {
+            const option = `<option value="${member}">${member}</option>`;
+            assignedToSelect.innerHTML += option;
+            editAssignedTo.innerHTML += option;
+          });
+        }
+      } catch (err) {
+        showToast('Error loading team members: ' + err.message, 'error');
+        assignedToSelect.innerHTML = editAssignedTo.innerHTML = '<option value="">No team members available</option>';
+      }
+    }
+
+    async function createOKR() {
+      const objective = objectiveInput.value.trim();
+      const keyResults = keyResultsInput.value.split(',').map(kr => kr.trim()).filter(kr => kr);
+      const assignedTo = Array.from(assignedToSelect.selectedOptions).map(opt => opt.value);
+      if (!userData || !objective || !keyResults.length || !assignedTo.length) {
+        showToast('Please fill in all fields and select team members.', 'error');
+        return;
+      }
+      try {
+        await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).add({
+          objective,
+          keyResults,
+          progress: 0,
+          createdBy: auth.currentUser.email,
+          assignedTo,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }));
+        showToast('OKR created successfully!', 'success');
+        objectiveInput.value = keyResultsInput.value = '';
+        assignedToSelect.selectedIndex = -1;
+        loadOKRs();
+      } catch (err) {
+        showToast('Error creating OKR: ' + err.message, 'error');
+      }
+    }
+
+    async function editOKR(id) {
+      try {
+        const doc = await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).doc(id).get());
+        if (!doc.exists) {
+          showToast('OKR not found.', 'error');
+          return;
+        }
+        const okr = doc.data();
+        if (userData.role !== 'admin' && okr.createdBy !== auth.currentUser.email) {
+          showToast('Only admins or OKR creators can edit OKRs.', 'error');
+          return;
+        }
+        editObjective.value = okr.objective;
+        editKeyResults.value = okr.keyResults.join(', ');
+        Array.from(editAssignedTo.options).forEach(opt => {
+          opt.selected = okr.assignedTo.includes(opt.value);
+        });
+        editOKRModal.dataset.okrId = id;
+        editOKRModal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+      } catch (err) {
+        showToast('Error loading OKR: ' + err.message, 'error');
+      }
+    }
+
+    async function saveEditedOKR() {
+      const id = editOKRModal.dataset.okrId;
+      const objective = editObjective.value.trim();
+      const keyResults = editKeyResults.value.split(',').map(kr => kr.trim()).filter(kr => kr);
+      const assignedTo = Array.from(editAssignedTo.selectedOptions).map(opt => opt.value);
+      if (!objective || !keyResults.length || !assignedTo.length) {
+        showToast('Please fill in all fields.', 'error');
+        return;
+      }
+      try {
+        await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).doc(id).update({
+          objective,
+          keyResults,
+          assignedTo,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }));
+        showToast('OKR updated successfully!', 'success');
+        editOKRModal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        loadOKRs();
+      } catch (err) {
+        showToast('Error updating OKR: ' + err.message, 'error');
+      }
+    }
+
+    async function updateProgress(id, value) {
+      if (!userData) return;
+      try {
+        const doc = await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).doc(id).get());
+        const okr = doc.data();
+        if (userData.role === 'admin' || okr.assignedTo.includes(auth.currentUser.email)) {
+          await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).doc(id).update({ progress: parseInt(value) }));
+          showToast('Progress updated successfully!', 'success');
+          loadOKRs();
+        } else {
+          showToast('Only admins or assignees can update progress.', 'error');
+        }
+      } catch (err) {
+        showToast('Error updating progress: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteOKR(id) {
+      if (!userData) return;
+      try {
+        const doc = await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).doc(id).get());
+        const okr = doc.data();
+        if (userData.role === 'admin' || okr.createdBy === auth.currentUser.email) {
+          await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).doc(id).delete());
+          showToast('OKR deleted successfully!', 'success');
+          loadOKRs();
+        } else {
+          showToast('Only admins or OKR creators can delete OKRs.', 'error');
+        }
+      } catch (err) {
+        showToast('Error deleting OKR: ' + err.message, 'error');
+      }
+    }
+
+    async function loadOKRs() {
+      if (!userData) return;
+      okrsList.innerHTML = '';
+      allOKRs = [];
+      try {
+        const snapshot = await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams/${userData.teamId}/okrs`).get());
+        snapshot.forEach(doc => {
+          const okr = { id: doc.id, ...doc.data() };
+          allOKRs.push(okr);
+          const div = document.createElement('div');
+          div.className = 'bg-white p-4 rounded-lg shadow';
+          div.innerHTML = `
+            <h4 class="font-semibold text-lg">${okr.objective}</h4>
+            <ul class="list-disc pl-5 my-2">
+              ${okr.keyResults.map(kr => `<li>${kr}</li>`).join('')}
+            </ul>
+            <p class="text-sm"><strong>Assigned to:</strong> ${okr.assignedTo.join(', ')}</p>
+            <p class="text-sm"><strong>Progress:</strong> ${okr.progress}%</p>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div class="bg-indigo-600 h-2 rounded-full" style="width: ${okr.progress}%"></div>
+            </div>
+            <input type="range" min="0" max="100" value="${okr.progress}" class="w-full mt-2" />
+            <div class="flex space-x-2 mt-2">
+              <button class="edit-btn px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition" data-okr-id="${okr.id}">Edit</button>
+              <button class="delete-btn px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition" data-okr-id="${okr.id}">Delete</button>
+            </div>
+          `;
+          okrsList.appendChild(div);
+        });
+        okrsList.querySelectorAll('input[type="range"]').forEach(slider => {
+          slider.addEventListener('change', e => updateProgress(slider.closest('div').querySelector('.delete-btn').dataset.okrId, e.target.value));
+        });
+        okrsList.querySelectorAll('.edit-btn').forEach(btn => {
+          btn.addEventListener('click', () => editOKR(btn.dataset.okrId));
+        });
+        okrsList.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', () => deleteOKR(btn.dataset.okrId));
+        });
+        loadAnalytics();
+        loadAlignmentTree();
+      } catch (err) {
+        showToast('Error loading OKRs: ' + err.message, 'error');
+      }
+    }
+
+    function loadAnalytics() {
+      if (chartInstance) chartInstance.destroy();
+      const canvas = document.getElementById('okrChart');
+      if (!canvas || !userData) {
+        showToast('Chart unavailable.', 'error');
+        return;
+      }
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        showToast('Failed to initialize chart.', 'error');
+        return;
+      }
+      if (allOKRs.length === 0) {
+        canvas.parentElement.innerHTML = '<p class="text-center text-gray-500">No OKRs available.</p>';
+        return;
+      }
+      const completed = allOKRs.filter(okr => okr.progress === 100).length;
+      const inProgress = allOKRs.filter(okr => okr.progress > 0 && okr.progress < 100).length;
+      const notStarted = allOKRs.filter(okr => okr.progress === 0).length;
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed', 'In Progress', 'Not Started'],
+          datasets: [{ data: [completed, inProgress, notStarted], backgroundColor: ['#10B981', '#3B82F6', '#EF4444'], borderWidth: 1 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+
+    async function loadAlignmentTree() {
+      if (!userData) return;
+      alignmentTree.innerHTML = '';
+      try {
+        const orgDoc = await withRetry(() => db.collection('organisations').doc(userData.organisationId).get());
+        if (!orgDoc.exists) throw new Error('Organisation not found');
+        alignmentTree.innerHTML += `<li><strong>Organisation:</strong> ${orgDoc.data().name}</li>`;
+        const deptDoc = await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments`).doc(userData.departmentId).get());
+        if (!deptDoc.exists) throw new Error('Department not found');
+        alignmentTree.innerHTML += `<li><strong>Department:</strong> ${deptDoc.data().name}</li>`;
+        const teamDoc = await withRetry(() => db.collection(`organisations/${userData.organisationId}/departments/${userData.departmentId}/teams`).doc(userData.teamId).get());
+        if (!teamDoc.exists) throw new Error('Team not found');
+        alignmentTree.innerHTML += `<li><strong>Team:</strong> ${teamDoc.data().name}</li>`;
+        const okrUl = document.createElement('ul');
+        okrUl.className = 'list-disc pl-6';
+        allOKRs.forEach(okr => {
+          okrUl.innerHTML += `<li><strong>OKR:</strong> ${okr.objective}</li>`;
+        });
+        alignmentTree.appendChild(okrUl);
+      } catch (err) {
+        showToast('Error loading alignment tree: ' + err.message, 'error');
+      }
+    }
+
+    function filterOKRs() {
+      let debounceTimeout;
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        const query = (searchBar.value || sidebarSearch.value).toLowerCase();
+        okrsList.innerHTML = '';
+        allOKRs.forEach(okr => {
+          if (okr.objective.toLowerCase().includes(query) || okr.keyResults.some(kr => kr.toLowerCase().includes(query))) {
+            const div = document.createElement('div');
+            div.className = 'bg-white p-4 rounded-lg shadow';
+            div.innerHTML = `
+              <h4 class="font-semibold text-lg">${okr.objective}</h4>
+              <ul class="list-disc pl-5 my-2">
+                ${okr.keyResults.map(kr => `<li>${kr}</li>`).join('')}
+              </ul>
+              <p class="text-sm"><strong>Assigned to:</strong> ${okr.assignedTo.join(', ')}</p>
+              <p class="text-sm"><strong>Progress:</strong> ${okr.progress}%</p>
+              <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div class="bg-indigo-600 h-2 rounded-full" style="width: ${okr.progress}%"></div>
+              </div>
+              <input type="range" min="0" max="100" value="${okr.progress}" class="w-full mt-2" />
+              <div class="flex space-x-2 mt-2">
+                <button class="edit-btn px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition" data-okr-id="${okr.id}">Edit</button>
+                <button class="delete-btn px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition" data-okr-id="${okr.id}">Delete</button>
+              </div>
+            `;
+            okrsList.appendChild(div);
+          }
+        });
+        okrsList.querySelectorAll('input[type="range"]').forEach(slider => {
+          slider.addEventListener('change', e => updateProgress(slider.closest('div').querySelector('.delete-btn').dataset.okrId, e.target.value));
+        });
+        okrsList.querySelectorAll('.edit-btn').forEach(btn => {
+          btn.addEventListener('click', () => editOKR(btn.dataset.okrId));
+        });
+        okrsList.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', () => deleteOKR(btn.dataset.okrId));
+        });
+      }, 300);
+    }
+
+    function exportOKRs() {
+      if (!userData) return;
+      const csvContent = [
+        ['Objective', 'Key Results', 'Assigned To', 'Progress'],
+        ...allOKRs.map(okr => [
+          `"${okr.objective}"`,
+          `"${okr.keyResults.join('; ')}"`,
+          `"${okr.assignedTo.join(', ')}"`,
+          okr.progress
+        ])
+      ].map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      saveAs(blob, 'okrs_export.csv');
+      showToast('OKRs exported successfully!', 'success');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      feather.replace();
+      document.getElementById('hamburger').addEventListener('click', toggleSidebar);
+      document.getElementById('userDropdownToggle').addEventListener('click', toggleDropdown);
+      document.getElementById('logoutButton').addEventListener('click', logout);
+      document.getElementById('createOKRButton').addEventListener('click', createOKR);
+      document.getElementById('exportOKRsButton').addEventListener('click', exportOKRs);
+      document.getElementById('createOrgButton').addEventListener('click', createOrganisation);
+      document.getElementById('createDeptButton').addEventListener('click', createDepartment);
+      document.getElementById('createTeamButton').addEventListener('click', createTeam);
+      document.getElementById('cancelEditButton').addEventListener('click', () => {
+        editOKRModal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+      });
+      document.getElementById('saveEditButton').addEventListener('click', saveEditedOKR);
+      document.querySelectorAll('[data-section]').forEach(link => {
+        link.addEventListener('click', e => {
+          e.preventDefault();
+          showSection(link.dataset.section);
+        });
+      });
+      document.querySelectorAll('[data-submenu]').forEach(link => {
+        link.addEventListener('click', e => {
+          e.preventDefault();
+          toggleSubmenu(link.dataset.submenu);
+        });
+      });
+      searchBar.addEventListener('input', filterOKRs);
+      sidebarSearch.addEventListener('input', filterOKRs);
+      orgSelectForTeam.addEventListener('change', async () => {
+        const orgId = orgSelectForTeam.value;
+        deptSelectForTeam.disabled = !orgId;
+        deptSelectForTeam.innerHTML = '<option value="">Select Department</option>';
+        if (orgId) {
+          try {
+            const snapshot = await withRetry(() => db.collection(`organisations/${orgId}/departments`).get());
+            snapshot.forEach(doc => {
+              deptSelectForTeam.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+            });
+          } catch (err) {
+            showToast('Error loading departments: ' + err.message, 'error');
+          }
+        }
+      });
+
+      document.addEventListener('click', e => {
+        if (window.innerWidth <= 768 && sidebar.classList.contains('active') && !sidebar.contains(e.target) && !document.getElementById('hamburger').contains(e.target)) {
+          sidebar.classList.remove('active');
+        }
+        if (!document.getElementById('userDropdownToggle').contains(e.target) && !document.getElementById('userDropdown').contains(e.target)) {
+          document.getElementById('userDropdown').classList.add('hidden');
+        }
+      });
+
+      auth.onAuthStateChanged(user => {
+        if (!user) {
+          window.location.href = 'index.html';
+          return;
+        }
+        loading.style.display = 'flex';
+        withRetry(() => db.collection('users').doc(user.uid).get(), 3, 1000)
+          .then(doc => {
+            if (doc.exists) {
+              userData = doc.data();
+              if (!userData.organisationId || !userData.departmentId || !userData.teamId) {
+                showToast('Incomplete user profile.', 'error');
+                window.location.href = 'index.html';
+                return;
+              }
+              userName.textContent = userData.name || user.displayName || 'Unknown User';
+              userEmail.textContent = userData.email || user.email;
+              headerUserName.textContent = userData.name || user.displayName || 'Unknown User';
+              dropdownUserEmail.textContent = userData.email || user.email;
+              adminNav.classList.toggle('hidden', userData.role !== 'admin');
+              loadTeamMembers().then(() => {
+                loadAdminPanel();
+                loadOKRs().then(() => {
+                  showSection('dashboardSection');
+                  loading.style.display = 'none';
+                });
+              });
+            } else {
+              showToast('User profile not found.', 'error');
+              window.location.href = 'index.html';
+            }
+          })
+          .catch(err => {
+            showToast('Error loading user data: ' + err.message, 'error');
+            loading.style.display = 'none';
+            window.location.href = 'index.html';
+          });
+      });
+    });
+  </script>
+</body>
+</html>

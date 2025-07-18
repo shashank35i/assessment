@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyOKR - Welcome</title>
+  <link rel="icon" href="data:image/x-icon;base64,AA" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .hero-bg {
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      background-size: cover;
+    }
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+    .slide-up {
+      animation: slideUp 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+     .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 3rem 0;
+    }
+    .feature-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+    }
+    .feature-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 1rem;
+    }
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    .feature-card p {
+      color: #4b5563;
+      font-size: 0.95rem;
+    }
+    .testimonials {
+      text-align: center;
+      margin: 3rem 0;
+      padding: 1rem;
+    }
+    .testimonial-slider {
+      display: flex;
+      overflow-x: auto;
+      gap: 1.5rem;
+      padding: 1rem;
+      scroll-snap-type: x mandatory;
+    }
+    .testimonial-card {
+      flex: 0 0 clamp(260px, 40vw, 300px);
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+      scroll-snap-align: start;
+    }
+    .footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      
+      background: #1f2937;
+      color: white;
+    }
+    .footer a {
+      color: #a5b4fc;
+      margin: 0 0.75rem;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+  <!-- Home Section -->
+  <div id="homeSection" class="container mx-auto px-4">
+    <header class="py-6 flex justify-between items-center">
+      <div class="text-2xl font-bold text-gray-800">MyOKR</div>
+      <div class="space-x-4">
+        <button onclick="showAuth('login')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Login</button>
+        <button onclick="showAuth('register')" class="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition">Sign Up</button>
+      </div>
+    </header>
+    <div class="hero-bg text-white rounded-2xl p-12 text-center mt-8 fade-in">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Achieve More with MyOKR</h1>
+      <p class="text-lg md:text-xl max-w-2xl mx-auto mb-8">Set, track, and align your team’s goals with our intuitive OKR platform.</p>
+      <button onclick="showAuth('register')" class="px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-gray-100 transition">Get Started Free</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+      <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition">
+        <h3 class="text-xl font-semibold mb-2">Goal Setting</h3>
+        <p class="text-gray-600">Create clear objectives and measurable key results.</p>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition">
+        <h3 class="text-xl font-semibold mb-2">Progress Tracking</h3>
+        <p class="text-gray-600">Monitor OKRs with real-time updates and visuals.</p>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition">
+        <h3 class="text-xl font-semibold mb-2">Team Alignment</h3>
+        <p class="text-gray-600">Connect goals across your organization.</p>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feature-card">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'%3E%3Crect width='300' height='120' fill='%23f3f4f6'/%3E%3Crect x='20' y='20' width='260' height='80' fill='%23fff' stroke='%234F46E5' stroke-width='2'/%3E%3Crect x='40' y='40' width='60' height='40' fill='%234F46E5'/%3E%3Ctext x='120' y='60' font-size='16' fill='%231f2937'%3EOKR Creation%3C/text%3E%3C/svg%3E" alt="OKR Creation" />
+        <h3>OKR Creation</h3>
+        <p>Define clear objectives and measurable key results to drive team focus.</p>
+      </div>
+      <div class="feature-card">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'%3E%3Crect width='300' height='120' fill='%23f3f4f6'/%3E%3Crect x='20' y='60' width='260' height='20' fill='%23e5e7eb'/%3E%3Crect x='20' y='60' width='150' height='20' fill='%234F46E5'/%3E%3Ctext x='20' y='40' font-size='16' fill='%231f2937'%3EProgress Tracking%3C/text%3E%3C/svg%3E" alt="Progress Tracking" />
+        <h3>Progress Tracking</h3>
+        <p>Monitor OKR progress with intuitive sliders and visual indicators.</p>
+      </div>
+      <div class="feature-card">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'%3E%3Crect width='300' height='120' fill='%23f3f4f6'/%3E%3Crect x='20' y='20' width='80' height='80' fill='%234F46E5'/%3E%3Crect x='110' y='40' width='80' height='60' fill='%237C3AED'/%3E%3Crect x='200' y='60' width='80' height='40' fill='%233B82F6'/%3E%3Ctext x='20' y='110' font-size='16' fill='%231f2937'%3EAnalytics%3C/text%3E%3C/svg%3E" alt="Analytics Dashboard" />
+        <h3>Analytics Dashboard</h3>
+        <p>Visualize progress with dynamic charts and actionable insights.</p>
+      </div>
+      <div class="feature-card">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'%3E%3Crect width='300' height='120' fill='%23f3f4f6'/%3E%3Ccircle cx='50' cy='40' r='20' fill='%234F46E5'/%3E%3Cline x1='50' y1='60' x2='150' y2='80' stroke='%231f2937' stroke-width='2'/%3E%3Ccircle cx='150' cy='80' r='20' fill='%237C3AED'/%3E%3Ctext x='20' y='110' font-size='16' fill='%231f2937'%3EAlignment%3C/text%3E%3C/svg%3E" alt="OKR Alignment" />
+        <h3>OKR Alignment</h3>
+        <p>Connect goals across your organization’s hierarchy.</p>
+      </div>
+      <div class="feature-card">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'%3E%3Crect width='300' height='120' fill='%23f3f4f6'/%3E%3Crect x='20' y='20' width='260' height='80' fill='%23fff' stroke='%231f2937' stroke-width='2'/%3E%3Cpath d='M40 40h220v40h-220z' fill='%23e5e7eb'/%3E%3Ctext x='20' y='110' font-size='16' fill='%231f2937'%3ECSV Export%3C/text%3E%3C/svg%3E" alt="CSV Export" />
+        <h3>CSV Export</h3>
+        <p>Export OKRs for reporting and external analysis.</p>
+      </div>
+      <div class="feature-card">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 120'%3E%3Crect width='300' height='120' fill='%23f3f4f6'/%3E%3Crect x='20' y='20' width='260' height='80' fill='%23fff' stroke='%231f2937' stroke-width='2'/%3E%3Ccircle cx='50' cy='40' r='10' fill='%234F46E5'/%3E%3Ccircle cx='150' cy='60' r='10' fill='%237C3AED'/%3E%3Ctext x='20' y='110' font-size='16' fill='%231f2937'%3EAdmin Panel%3C/text%3E%3C/svg%3E" alt="Admin Management" />
+        <h3>Admin Management</h3>
+        <p>Manage organizations, departments, and teams with ease.</p>
+      </div>
+    </div>
+    <div class="testimonials">
+      <h2 class="text-2xl font-bold mb-4">Trusted by Teams Worldwide</h2>
+      <div class="testimonial-slider">
+        <div class="testimonial-card">
+          <p>"MyOKR transformed how we align and track our goals!"</p>
+          <p class="font-semibold">– Jane Doe, Team Lead</p>
+        </div>
+        <div class="testimonial-card">
+          <p>"The analytics dashboard provides clear insights."</p>
+          <p class="font-semibold">– John Smith, Manager</p>
+        </div>
+        <div class="testimonial-card">
+          <p>"Seamless goal alignment across our organization."</p>
+          <p class="font-semibold">– Sarah Lee, CEO</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+  </div>
+  </div>
+
+  <!-- Auth Section -->
+  <div id="authSection" class="container mx-auto px-4 hidden">
+    <div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg mt-12 slide-up">
+      <button onclick="showHome()" class="mb-4 text-indigo-600 hover:underline">&larr; Back</button>
+      <h2 id="authTitle" class="text-2xl font-bold text-gray-800 text-center mb-6">Sign In</h2>
+      <input id="name" type="text" placeholder="Full Name" class="hidden w-full p-3 border border-gray-300 rounded-lg mb-4 focus:border-indigo-600 focus:outline-none" />
+      <div id="hierarchySection" class="hidden">
+        <div class="mb-4">
+          <label class="flex items-center space-x-4">
+            <input type="radio" name="hierarchy" value="join" checked onclick="toggleHierarchyFields()" class="form-radio text-indigo-600" />
+            <span>Join Existing Hierarchy</span>
+          </label>
+          <label class="flex items-center space-x-4">
+            <input type="radio" name="hierarchy" value="create" onclick="toggleHierarchyFields()" class="form-radio text-indigo-600" />
+            <span>Create New Hierarchy</span>
+          </label>
+        </div>
+        <div id="orgCreateSection" class="hidden space-y-4">
+          <input id="newOrgName" type="text" placeholder="New Organization Name" class="w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-600 focus:outline-none" />
+          <input id="newDeptName" type="text" placeholder="New Department Name" class="w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-600 focus:outline-none" />
+          <input id="newTeamName" type="text" placeholder="New Team Name" class="w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-600 focus:outline-none" />
+        </div>
+        <select id="organisation" class="hidden w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-600 focus:outline-none">
+          <option value="">Select Organization</option>
+        </select>
+        <select id="department" class="hidden w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-600 focus:outline-none" disabled>
+          <option value="">Select Department</option>
+        </select>
+        <select id="team" class="hidden w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-600 focus:outline-none" disabled>
+          <option value="">Select Team</option>
+        </select>
+      </div>
+      <input id="email" type="email" placeholder="Email Address" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:border-indigo-600 focus:outline-none" />
+      <input id="password" type="password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:border-indigo-600 focus:outline-none" />
+      <button id="authButton" onclick="login()" class="w-full p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Sign In</button>
+      <button onclick="googleSignIn()" class="w-full p-3 mt-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+        <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24"><path fill="currentColor" d="M12.24 10.667V14h3.26c-.13 1.81-1.33 3.33-3.26 3.33-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5c.87 0 1.67.32 2.28.85l2.31-2.31C15.37 7.02 13.74 6 12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c3.09 0 5.62-2.33 5.95-5.33H12.24z"/></svg>
+        Sign in with Google
+      </button>
+      <p class="text-center mt-4 text-gray-600">
+        <span id="toggleLink" onclick="toggleRegister()" class="text-indigo-600 hover:underline cursor-pointer">Create an account</span>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAnHzdsQH2EPYK1hUqWr67x_CSfL3vrsos",
+      authDomain: "assessment-43684.firebaseapp.com",
+      projectId: "assessment-43684",
+      storageBucket: "assessment-43684.appspot.com",
+      messagingSenderId: "210801400468",
+      appId: "1:210801400468:web:eeb913406f4b6935b6b281",
+      measurementId: "G-1VDL78V1QX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Set Persistence
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    // DOM Elements
+    const homeSection = document.getElementById('homeSection');
+    const authSection = document.getElementById('authSection');
+    const authTitle = document.getElementById('authTitle');
+    const nameInput = document.getElementById('name');
+    const hierarchySection = document.getElementById('hierarchySection');
+    const orgCreateSection = document.getElementById('orgCreateSection');
+    const newOrgName = document.getElementById('newOrgName');
+    const newDeptName = document.getElementById('newDeptName');
+    const newTeamName = document.getElementById('newTeamName');
+    const organisationSelect = document.getElementById('organisation');
+    const departmentSelect = document.getElementById('department');
+    const teamSelect = document.getElementById('team');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const authButton = document.getElementById('authButton');
+    const toggleLink = document.getElementById('toggleLink');
+
+    // Toast Notification
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium z-50 max-w-[90%] animate-slide-down`;
+      toast.classList.add(type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500');
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Retry Logic
+    async function withRetry(fn, maxAttempts = 3, delay = 1000) {
+      if (!navigator.onLine) {
+        showToast('You’re offline. Please check your connection.', 'error');
+        throw new Error('Network unavailable');
+      }
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          return await fn();
+        } catch (err) {
+          console.error(`Attempt ${attempt} failed: ${err.message}`);
+          if (err.code === 'permission-denied') {
+            showToast('Permission denied: Check Firestore rules.', 'error');
+            throw err;
+          }
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          throw err;
+        }
+      }
+    }
+
+    // Navigation
+    function showHome() {
+      authSection.classList.add('hidden');
+      homeSection.classList.remove('hidden');
+    }
+
+    function showAuth(mode) {
+      homeSection.classList.add('hidden');
+      authSection.classList.remove('hidden');
+      toggleRegister(mode === 'register');
+    }
+
+    function toggleRegister(isRegister = !authButton.textContent.includes('Sign Up')) {
+      authTitle.textContent = isRegister ? 'Sign Up' : 'Sign In';
+      nameInput.classList.toggle('hidden', !isRegister);
+      hierarchySection.classList.toggle('hidden', !isRegister);
+      authButton.textContent = isRegister ? 'Sign Up' : 'Sign In';
+      authButton.onclick = isRegister ? () => register(false) : login;
+      toggleLink.textContent = isRegister ? 'Sign in to your account' : 'Create an account';
+      if (isRegister) {
+        toggleHierarchyFields();
+        loadOrganisations();
+      }
+    }
+
+    function toggleHierarchyFields() {
+      const isCreate = document.querySelector('input[name="hierarchy"][value="create"]').checked;
+      orgCreateSection.classList.toggle('hidden', !isCreate);
+      organisationSelect.classList.toggle('hidden', isCreate);
+      departmentSelect.classList.toggle('hidden', isCreate);
+      teamSelect.classList.toggle('hidden', isCreate);
+    }
+
+    // Authentication
+    async function login() {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if (!email || !password) {
+        showToast('Please enter email and password', 'error');
+        return;
+      }
+      authButton.disabled = true;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        showToast('Login successful!', 'success');
+      } catch (err) {
+        showToast('Login failed: ' + err.message, 'error');
+      } finally {
+        authButton.disabled = false;
+      }
+    }
+
+    async function googleSignIn() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      authButton.disabled = true;
+      try {
+        const { user } = await auth.signInWithPopup(provider);
+        const userDoc = await withRetry(() => db.collection('users').doc(user.uid).get());
+        if (!userDoc.exists) {
+          showToast('Please complete your profile setup.', 'info');
+          showAuth('register');
+          nameInput.value = user.displayName || '';
+          emailInput.value = user.email || '';
+          passwordInput.classList.add('hidden');
+          authButton.textContent = 'Complete Registration';
+          authButton.onclick = () => register(true);
+        } else {
+          showToast('Google Sign-In successful!', 'success');
+        }
+      } catch (err) {
+        showToast('Google Sign-In failed: ' + err.message, 'error');
+      } finally {
+        authButton.disabled = false;
+      }
+    }
+
+    async function register(skipAuthCreation = false) {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      const name = nameInput.value.trim();
+      const isCreate = document.querySelector('input[name="hierarchy"][value="create"]').checked;
+      const orgId = organisationSelect.value;
+      const deptId = departmentSelect.value;
+      const teamId = teamSelect.value;
+      const orgName = newOrgName.value.trim();
+      const deptName = newDeptName.value.trim();
+      const teamName = newTeamName.value.trim();
+
+      if (!email || (!skipAuthCreation && !password) || !name) {
+        showToast('Please enter name, email, and password', 'error');
+        return;
+      }
+      if (isCreate && (!orgName || !deptName || !teamName)) {
+        showToast('Please fill in all hierarchy fields', 'error');
+        return;
+      }
+      if (!isCreate && (!orgId || !deptId || !teamId)) {
+        showToast('Please select an organization, department, and team', 'error');
+        return;
+      }
+
+      authButton.disabled = true;
+      try {
+        let user;
+        if (!skipAuthCreation) {
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          user = userCredential.user;
+        } else {
+          user = auth.currentUser;
+        }
+
+        if (isCreate) {
+          const { orgId, deptId, teamId } = await createNewHierarchy(user, orgName, deptName, teamName, name);
+          showToast('Hierarchy and user profile created!', 'success');
+        } else {
+          const teamDoc = await withRetry(() => db.collection(`organisations/${orgId}/departments/${deptId}/teams`).doc(teamId).get());
+          if (!teamDoc.exists) throw new Error('Selected team does not exist');
+          await withRetry(() => db.collection('users').doc(user.uid).set({
+            email: user.email,
+            name,
+            organisationId: orgId,
+            departmentId: deptId,
+            teamId,
+            role: 'member',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          }));
+          await withRetry(() => db.collection(`organisations/${orgId}/departments/${deptId}/teams`).doc(teamId).update({
+            members: firebase.firestore.FieldValue.arrayUnion(user.email)
+          }));
+          showToast('Registration successful!', 'success');
+        }
+
+        // Clear inputs
+        nameInput.value = emailInput.value = passwordInput.value = '';
+        newOrgName.value = newDeptName.value = newTeamName.value = '';
+        organisationSelect.value = departmentSelect.value = teamSelect.value = '';
+        loadOrganisations();
+      } catch (err) {
+        showToast('Registration failed: ' + err.message, 'error');
+        if (!skipAuthCreation && auth.currentUser) {
+          await auth.currentUser.delete();
+        }
+      } finally {
+        authButton.disabled = false;
+      }
+    }
+
+    async function createNewHierarchy(user, orgName, deptName, teamName, name) {
+      const orgDoc = await withRetry(() => db.collection('organisations').add({ name: orgName }));
+      const orgId = orgDoc.id;
+      const deptDoc = await withRetry(() => db.collection(`organisations/${orgId}/departments`).add({ name: deptName }));
+      const deptId = deptDoc.id;
+      const teamDoc = await withRetry(() => db.collection(`organisations/${orgId}/departments/${deptId}/teams`).add({
+        name: teamName,
+        members: [user.email]
+      }));
+      const teamId = teamDoc.id;
+      await withRetry(() => db.collection('users').doc(user.uid).set({
+        email: user.email,
+        name,
+        organisationId: orgId,
+        departmentId: deptId,
+        teamId,
+        role: 'admin',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }));
+      return { orgId, deptId, teamId };
+    }
+
+    async function loadOrganisations() {
+      try {
+        const snapshot = await withRetry(() => db.collection('organisations').get());
+        organisationSelect.innerHTML = '<option value="">Select Organization</option>';
+        snapshot.forEach(doc => {
+          organisationSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+        });
+      } catch (err) {
+        showToast('Error loading organisations: ' + err.message, 'error');
+      }
+    }
+
+    organisationSelect.onchange = async () => {
+      const orgId = organisationSelect.value;
+      departmentSelect.disabled = !orgId;
+      departmentSelect.innerHTML = '<option value="">Select Department</option>';
+      teamSelect.disabled = true;
+      teamSelect.innerHTML = '<option value="">Select Team</option>';
+      if (orgId) {
+        try {
+          const snapshot = await withRetry(() => db.collection(`organisations/${orgId}/departments`).get());
+          snapshot.forEach(doc => {
+            departmentSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+          });
+        } catch (err) {
+          showToast('Error loading departments: ' + err.message, 'error');
+        }
+      }
+    };
+
+    departmentSelect.onchange = async () => {
+      const orgId = organisationSelect.value;
+      const deptId = departmentSelect.value;
+      teamSelect.disabled = !deptId;
+      teamSelect.innerHTML = '<option value="">Select Team</option>';
+      if (deptId) {
+        try {
+          const snapshot = await withRetry(() => db.collection(`organisations/${orgId}/departments/${deptId}/teams`).get());
+          snapshot.forEach(doc => {
+            teamSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
+          });
+        } catch (err) {
+          showToast('Error loading teams: ' + err.message, 'error');
+        }
+      }
+    };
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        withRetry(() => db.collection('users').doc(user.uid).get()).then(doc => {
+          if (doc.exists && doc.data().organisationId && doc.data().departmentId && doc.data().teamId) {
+            window.location.href = 'nav.html';
+          } else {
+            showAuth('register');
+          }
+        }).catch(err => {
+          showToast('Error verifying profile: ' + err.message, 'error');
+          showHome();
+        });
+      } else {
+        showHome();
+      }
+    });
+  </script>
+</body>
+</html>
